@@ -1,5 +1,8 @@
 package com.wenming.weiswift.mvp.view;
 
+import android.widget.ImageView;
+import android.widget.TextView;
+
 import com.wenming.weiswift.entity.User;
 
 import java.util.ArrayList;
@@ -39,4 +42,8 @@ public interface FollowActivityView {
      * 显示FooterView，提示没有网络
      */
     public void showErrorFooterView();
+
+
+    public void updateRealtionShip(User user, ImageView icon, TextView text);
+
 }

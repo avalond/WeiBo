@@ -11,7 +11,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.wenming.weiswift.R;
@@ -43,7 +43,7 @@ public class MainActivity extends FragmentActivity {
 
     private FragmentManager mFragmentManager;
     private RelativeLayout mHomeTab, mMessageTab, mDiscoeryTab, mProfile;
-    private FrameLayout mPostTab;
+    private ImageView mPostTab;
     private boolean mComeFromAccoutActivity;
 
     @Override
@@ -55,7 +55,7 @@ public class MainActivity extends FragmentActivity {
         mMessageTab = (RelativeLayout) findViewById(R.id.tv_message);
         mDiscoeryTab = (RelativeLayout) findViewById(R.id.tv_discovery);
         mProfile = (RelativeLayout) findViewById(R.id.tv_profile);
-        mPostTab = (FrameLayout) findViewById(R.id.fl_post);
+        mPostTab = (ImageView) findViewById(R.id.fl_post);
         mContext = this;
         mFragmentManager = getSupportFragmentManager();
         if (savedInstanceState != null) {
@@ -242,7 +242,6 @@ public class MainActivity extends FragmentActivity {
                     .setIcon(R.drawable.logo)
                     .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-
                             ((MyApplication) getApplication()).finishAll();
                         }
                     })
@@ -263,6 +262,11 @@ public class MainActivity extends FragmentActivity {
         super.onDestroy();
     }
 
+    /**
+     * 解决输入法中的内存泄漏问题
+     *
+     * @param destContext
+     */
     public void fixInputMethodManagerLeak(Context destContext) {
         if (destContext == null) {
             return;

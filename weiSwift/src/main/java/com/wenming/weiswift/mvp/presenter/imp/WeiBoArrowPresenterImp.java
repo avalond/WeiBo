@@ -6,6 +6,7 @@ import android.widget.PopupWindow;
 import com.google.gson.Gson;
 import com.wenming.weiswift.entity.Status;
 import com.wenming.weiswift.entity.User;
+import com.wenming.weiswift.entity.list.FavoriteList;
 import com.wenming.weiswift.entity.list.StatusList;
 import com.wenming.weiswift.mvp.model.FavoriteListModel;
 import com.wenming.weiswift.mvp.model.FriendShipModel;
@@ -45,6 +46,13 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
         this.mAdapter = adapter;
     }
 
+    public WeiBoArrowPresenterImp(WeiboAdapter adapter) {
+        statusListModel = new StatusListModelImp();
+        friendShipModel = new FriendShipModelImp();
+        favoriteListModel = new FavoriteListModelImp();
+        this.mAdapter = adapter;
+    }
+
 
     /**
      * 删除一条微博
@@ -60,9 +68,10 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
             public void onSuccess() {
                 //内存删除
                 mAdapter.removeDataItem(position);
-                mAdapter.notifyItemRemoved(position);//显示动画效果
-                int rangeChangeCount = mAdapter.getItemCount() - (1 + position);
-                mAdapter.notifyItemRangeChanged(position, rangeChangeCount);//notifyItemRangeChanged：对于被删掉的位置及其后range大小范围内的view进行重新onBindViewHolder
+                //显示动画效果
+                mAdapter.notifyItemRemoved(position);
+                //notifyItemRangeChanged：对于被删掉的位置及其后range大小范围内的view进行重新onBindViewHolder
+                mAdapter.notifyItemRangeChanged(position, mAdapter.getItemCount() - (1 + position));
                 //本地删除
                 updateLocalFile(weiboGroup, position);
             }
@@ -90,7 +99,19 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
             case Constants.DELETE_WEIBO_TYPE4:
                 response = SDCardUtil.get(mContext, SDCardUtil.getSDCardPath() + "/weiSwift/profile", "我的图片微博" + AccessTokenKeeper.readAccessToken(mContext).getUid() + ".txt");
                 break;
+            case Constants.DELETE_WEIBO_TYPE5:
+                response = SDCardUtil.get(mContext, SDCardUtil.getSDCardPath() + "/weiSwift/home", "好友圈" + AccessTokenKeeper.readAccessToken(mContext).getUid() + ".txt");
+                break;
+            case Constants.DELETE_WEIBO_TYPE6:
+                response = SDCardUtil.get(mContext, SDCardUtil.getSDCardPath() + "/weiSwift/profile", "我的收藏" + AccessTokenKeeper.readAccessToken(mContext).getUid() + ".txt");
+                FavoriteList favoriteList = FavoriteList.parse(response);
+                if (favoriteList != null && favoriteList.favorites.size() > 0 && position < favoriteList.favorites.size()) {
+                    favoriteList.favorites.remove(position);
+                    SDCardUtil.put(mContext, SDCardUtil.getSDCardPath() + "/weiSwift/profile", "我的收藏" + AccessTokenKeeper.readAccessToken(mContext).getUid() + ".txt", new Gson().toJson(favoriteList));
+                }
+                return;
         }
+
         StatusList statusList = StatusList.parse(response);
         if (statusList != null && statusList.statuses.size() > 0 && position < statusList.statuses.size()) {
             statusList.statuses.remove(position);
@@ -106,6 +127,9 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
                     break;
                 case Constants.DELETE_WEIBO_TYPE4:
                     SDCardUtil.put(mContext, SDCardUtil.getSDCardPath() + "/weiSwift/profile", "我的图片微博" + AccessTokenKeeper.readAccessToken(mContext).getUid() + ".txt", new Gson().toJson(statusList));
+                    break;
+                case Constants.DELETE_WEIBO_TYPE5:
+                    SDCardUtil.put(mContext, SDCardUtil.getSDCardPath() + "/weiSwift/home", "好友圈" + AccessTokenKeeper.readAccessToken(mContext).getUid() + ".txt", new Gson().toJson(statusList));
                     break;
             }
         }
@@ -129,7 +153,7 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
             public void onError(String error) {
 
             }
-        });
+        }, false);
     }
 
     @Override
@@ -146,7 +170,7 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
             public void onError(String error) {
 
             }
-        });
+        }, false);
     }
 
     /**
@@ -161,7 +185,6 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
         favoriteListModel.createFavorite(status, context, new FavoriteListModel.OnRequestUIListener() {
             @Override
             public void onSuccess() {
-
 
             }
 
@@ -179,13 +202,24 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
      * @param context
      */
     @Override
-    public void cancalFavorite(Status status, Context context) {
+    public void cancalFavorite(final int position, Status status, Context context, final boolean deleteAnimation) {
         mContext = context;
-        mPopupWindows.dismiss();
+        if (mPopupWindows != null) {
+            mPopupWindows.dismiss();
+        }
         favoriteListModel.cancelFavorite(status, context, new FavoriteListModel.OnRequestUIListener() {
             @Override
             public void onSuccess() {
-
+                if (deleteAnimation) {
+                    //内存删除
+                    mAdapter.removeDataItem(position);
+                    //显示动画效果
+                    mAdapter.notifyItemRemoved(position);
+                    //对于被删掉的位置及其后range大小范围内的view进行重新onBindViewHolder
+                    mAdapter.notifyItemRangeChanged(position, mAdapter.getItemCount() - (1 + position));
+                    //本地删除
+                    updateLocalFile(Constants.DELETE_WEIBO_TYPE6, position);
+                }
             }
 
             @Override
@@ -194,4 +228,5 @@ public class WeiBoArrowPresenterImp implements WeiBoArrowPresent {
             }
         });
     }
+
 }
